@@ -14,7 +14,8 @@ A powerful Chrome extension for real-time translation using multiple AI APIs.
 - 🖱️ Easy-to-use popup interface for settings
 - 🔒 Secure local storage of API keys
 - ⚡ Caching mechanism for faster repeated translations
-- 🚀 Preloading feature for improved response time
+- 🚀 Streaming translation for real-time results
+- 📊 Final translation result logging in console
 
 ## 🛠️ Installation
 
@@ -32,7 +33,8 @@ A powerful Chrome extension for real-time translation using multiple AI APIs.
 5. Save your settings.
 6. On any webpage, select the text you want to translate.
 7. Click the translate button that appears near the selected text.
-8. View the translation result in a popup box.
+8. View the translation result in a popup box as it streams in real-time.
+9. Check the console for the final translation result log.
 
 ## ⚙️ Configuration
 
