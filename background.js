@@ -59,8 +59,8 @@ const translationCache = new Map();
 async function translateText(text, model, apiKey) {
     const cacheKey = `${model}:${text}`;
     
-    // 检查缓存
     if (translationCache.has(cacheKey)) {
+        sendPartialTranslation(translationCache.get(cacheKey), true);
         return translationCache.get(cacheKey);
     }
 
@@ -85,7 +85,8 @@ async function translateText(text, model, apiKey) {
                         { role: "system", content: prompt },
                         { role: "user", content: text }
                     ],
-                    temperature: 0.7
+                    temperature: 0.7,
+                    stream: true
                 });
                 break;
             case 'anthropic':
@@ -97,7 +98,8 @@ async function translateText(text, model, apiKey) {
                     max_tokens: 1024,
                     messages: [
                         { role: "user", content: prompt + "\n\n" + text }
-                    ]
+                    ],
+                    stream: true
                 });
                 break;
             case 'deepseek':
@@ -108,7 +110,7 @@ async function translateText(text, model, apiKey) {
                         { role: "system", content: prompt },
                         { role: "user", content: text }
                     ],
-                    stream: false
+                    stream: true
                 });
                 break;
             case 'moonshot':
@@ -119,57 +121,66 @@ async function translateText(text, model, apiKey) {
                         { role: "system", content: prompt },
                         { role: "user", content: text }
                     ],
-                    temperature: 0.3
+                    temperature: 0.3,
+                    stream: true
                 });
                 break;
         }
 
-        console.log('Sending request to API:', apiUrl);
-        console.log('Request headers:', headers);
-        console.log('Request body:', body);
-
         const response = await fetch(apiUrl, { method: 'POST', headers, body });
 
         if (!response.ok) {
-            console.error('API response not successful:', response.status, response.statusText);
-            const errorBody = await response.text();
-            console.error('Error response body:', errorBody);
-            throw new Error(`HTTP error! status: ${response.status}, body: ${errorBody}`);
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const data = await response.json();
-        console.log('API response data:', JSON.stringify(data, null, 2));
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let translatedText = '';
 
-        let translatedText = '';  // Initialize as empty string
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
 
-        switch (model) {
-            case 'openai':
-            case 'deepseek':
-            case 'moonshot':
-                translatedText = data.choices[0].message.content.trim();
-                break;
-            case 'anthropic':
-                translatedText = data.content[0].text.trim();
-                break;
-        }
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n').filter(line => line.trim() !== '');
 
-        if (!translatedText) {
-            console.error('No translated text found');
-            throw new Error('No translated text found in the API response');
+            for (const line of lines) {
+                if (line.trim() === 'data: [DONE]') {
+                    continue; // Skip the [DONE] message
+                }
+                if (line.startsWith('data: ')) {
+                    try {
+                        const data = JSON.parse(line.slice(6));
+                        let content = '';
+
+                        switch (model) {
+                            case 'openai':
+                            case 'deepseek':
+                            case 'moonshot':
+                                content = data.choices[0].delta.content || '';
+                                break;
+                            case 'anthropic':
+                                content = data.delta?.text || '';
+                                break;
+                        }
+
+                        translatedText += content;
+                        sendPartialTranslation(translatedText, false);
+                    } catch (error) {
+                        console.error('Error parsing JSON:', error);
+                        console.error('Problematic line:', line);
+                    }
+                }
+            }
         }
 
         const endTime = performance.now();
         const duration = endTime - startTime;
-        const logMessage = `Translation completed in ${duration.toFixed(2)} ms, result: ${translatedText}`;
+        const logMessage = `Translation completed in ${duration.toFixed(2)} ms`;
         
-        // Send log message to content script
-        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-            if (tabs[0]) {
-                chrome.tabs.sendMessage(tabs[0].id, {action: "log", message: logMessage});
-            }
-        });
+        sendLogMessage(logMessage);
+        sendPartialTranslation(translatedText, true); // 发送最终结果
         
-        // 缓存结果
         translationCache.set(cacheKey, translatedText);
 
         return translatedText;
@@ -178,15 +189,27 @@ async function translateText(text, model, apiKey) {
         const duration = endTime - startTime;
         const errorMessage = `Error during translation (after ${duration.toFixed(2)} ms): ${error.message}`;
         
-        // Send error message to content script
-        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-            if (tabs[0]) {
-                chrome.tabs.sendMessage(tabs[0].id, {action: "log", message: errorMessage, isError: true});
-            }
-        });
+        sendLogMessage(errorMessage, true);
+        sendPartialTranslation(`Translation error: ${error.message}`);
         
         throw error;
     }
+}
+
+function sendPartialTranslation(text, isFinal) {
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, {action: "updateTranslation", text: text, isFinal: isFinal});
+        }
+    });
+}
+
+function sendLogMessage(message, isError = false) {
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+        if (tabs[0]) {
+            chrome.tabs.sendMessage(tabs[0].id, {action: "log", message: message, isError: isError});
+        }
+    });
 }
 
 // 预加载函数

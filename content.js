@@ -19,8 +19,8 @@ function initializeExtension() {
     const selectedText = window.getSelection().toString().trim();
     if (selectedText) {
       showTranslateButton(selectedText);
-      // 触发预加载
-      chrome.runtime.sendMessage({ action: "preloadTranslation", text: selectedText });
+      // 移除预加载调用
+      // chrome.runtime.sendMessage({ action: "preloadTranslation", text: selectedText });
     } else {
       removeExistingButton();
       removeTranslationResult();
@@ -77,7 +77,6 @@ function initializeExtension() {
       e.stopPropagation(); // Stop event propagation
       console.log('Translate button clicked');
       translateText(text);
-      // No longer remove the button here, allowing users to click multiple times
     };
   }
 
@@ -91,71 +90,61 @@ function initializeExtension() {
   function translateText(text) {
     console.log('Sending translation request:', text);
     try {
-      chrome.runtime.sendMessage({ action: "translate", text }, (response) => {
-        console.log('Received translation response:', response);
-        if (chrome.runtime.lastError) {
-          console.error('Chrome runtime error:', chrome.runtime.lastError);
-          showTranslationResult(`Translation error: ${chrome.runtime.lastError.message}`);
-        } else if (response && response.error) {
-          showTranslationResult(`Translation error: ${response.error}`);
-        } else if (response && response.translatedText) {
-          showTranslationResult(response.translatedText);
-        } else {
-          console.error('Unexpected response received:', response);
-          showTranslationResult('Translation failed: Unexpected response received');
-        }
-      });
+      chrome.runtime.sendMessage({ action: "translate", text });
     } catch (error) {
       console.error('Error sending message:', error);
       showTranslationResult(`Message sending error: ${error.message}`);
     }
   }
 
-  function showTranslationResult(translatedText) {
-    console.log('Displaying translation result:', translatedText);
-    removeTranslationResult(); // Remove existing translation result box
-
-    const resultBox = document.createElement('div');
-    resultBox.id = 'translation-result';
-    resultBox.style.position = 'fixed';
-    resultBox.style.zIndex = '2147483647';
-    resultBox.style.padding = '10px';
-    resultBox.style.backgroundColor = 'rgba(255, 255, 255, 0.9)'; // Semi-transparent white background
-    resultBox.style.color = '#333'; // Dark gray text
-    resultBox.style.border = '1px solid rgba(0, 0, 0, 0.2)';
-    resultBox.style.borderRadius = '8px';
-    resultBox.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08)';
-    resultBox.style.maxWidth = '300px';
-    resultBox.style.fontSize = '14px';
-    resultBox.style.lineHeight = '1.5';
-    resultBox.style.overflowY = 'auto';
-    resultBox.style.maxHeight = '200px';
-    resultBox.style.backdropFilter = 'blur(5px)'; // Background blur effect
-    resultBox.style.transition = 'all 0.3s ease'; // Smooth transition effect
-
-    resultBox.textContent = translatedText;
-
-    const button = document.getElementById('translate-button');
-    if (button) {
-      resultBox.style.left = button.style.left;
-      resultBox.style.top = `${parseInt(button.style.top) + 30}px`;
-    } else {
-      const selection = window.getSelection();
-      const range = selection.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-      resultBox.style.left = `${rect.left}px`;
-      resultBox.style.top = `${rect.bottom + 35}px`;
+  function showTranslationResult(translatedText, isFinal) {
+    if (isFinal) {
+        console.log('Final translation result:', translatedText);
     }
+    let resultBox = document.getElementById('translation-result');
+    
+    if (!resultBox) {
+        resultBox = document.createElement('div');
+        resultBox.id = 'translation-result';
+        resultBox.style.position = 'fixed';
+        resultBox.style.zIndex = '2147483647';
+        resultBox.style.padding = '10px';
+        resultBox.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+        resultBox.style.color = '#333';
+        resultBox.style.border = '1px solid rgba(0, 0, 0, 0.2)';
+        resultBox.style.borderRadius = '8px';
+        resultBox.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08)';
+        resultBox.style.maxWidth = '300px';
+        resultBox.style.fontSize = '14px';
+        resultBox.style.lineHeight = '1.5';
+        resultBox.style.overflowY = 'auto';
+        resultBox.style.maxHeight = '200px';
+        resultBox.style.backdropFilter = 'blur(5px)';
+        resultBox.style.transition = 'all 0.3s ease';
 
-    document.body.appendChild(resultBox);
+        const button = document.getElementById('translate-button');
+        if (button) {
+          resultBox.style.left = button.style.left;
+          resultBox.style.top = `${parseInt(button.style.top) + 30}px`;
+        } else {
+          const selection = window.getSelection();
+          const range = selection.getRangeAt(0);
+          const rect = range.getBoundingClientRect();
+          resultBox.style.left = `${rect.left}px`;
+          resultBox.style.top = `${rect.bottom + 35}px`;
+        }
 
-    // Add hover effect
-    resultBox.onmouseover = function() {
-      this.style.boxShadow = '0 6px 8px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.12)';
-    };
-    resultBox.onmouseout = function() {
-      this.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08)';
-    };
+        document.body.appendChild(resultBox);
+
+        resultBox.onmouseover = function() {
+          this.style.boxShadow = '0 6px 8px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.12)';
+        };
+        resultBox.onmouseout = function() {
+          this.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08)';
+        };
+      }
+
+      resultBox.textContent = translatedText;
   }
 
   function removeTranslationResult() {
@@ -164,17 +153,19 @@ function initializeExtension() {
       existingResult.remove();
     }
   }
-}
 
-// Add this listener to receive log messages from the background script
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === "log") {
-        if (request.isError) {
-            console.error(request.message);
-        } else {
-            console.log(request.message);
-        }
+  // Add this listener to receive messages from the background script
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === "updateTranslation") {
+      showTranslationResult(request.text, request.isFinal);
+    } else if (request.action === "log") {
+      if (request.isError) {
+        console.error(request.message);
+      } else {
+        console.log(request.message);
+      }
     }
-});
+  });
+}
 
 console.log('Content script loading completed');
