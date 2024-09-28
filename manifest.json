@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "实时翻译",
+  "version": "1.0",
+  "description": "通过DeepSeek API实时翻译选中的文本",
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://api.deepseek.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ]
+}
