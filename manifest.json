@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Real-time Translator",
-  "version": "1.1",
+  "version": "1.2",
   "description": "A powerful real-time translator that supports multiple AI APIs. Features include:\n• Translate selected text on any webpage\n• Support for OpenAI, Anthropic, DeepSeek, and Moonshot AI models\n• Customizable translation prompts\n• Easy-to-use popup interface for settings\n• Secure local storage of API keys",
   "permissions": [
     "activeTab",
