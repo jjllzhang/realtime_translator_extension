@@ -38,13 +38,32 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             }
         });
         return true;  // Keep message channel open for async response
+    } else if (request.action === "preloadTranslation") {
+        chrome.storage.sync.get(['selectedModel', 'apiKeys'], function(data) {
+            const selectedModel = data.selectedModel || 'openai';
+            const apiKeys = data.apiKeys || {};
+            const apiKey = apiKeys[selectedModel];
+            if (apiKey) {
+                preloadTranslation(request.text, selectedModel, apiKey);
+            }
+        });
     } else {
         console.log('Received message with unknown action:', request);
         sendResponse({ error: 'Unknown action' });
     }
 });
 
+// 添加一个简单的缓存
+const translationCache = new Map();
+
 async function translateText(text, model, apiKey) {
+    const cacheKey = `${model}:${text}`;
+    
+    // 检查缓存
+    if (translationCache.has(cacheKey)) {
+        return translationCache.get(cacheKey);
+    }
+
     const startTime = performance.now();
     try {
         const { customPrompt } = await chrome.storage.sync.get('customPrompt');
@@ -150,6 +169,9 @@ async function translateText(text, model, apiKey) {
             }
         });
         
+        // 缓存结果
+        translationCache.set(cacheKey, translatedText);
+
         return translatedText;
     } catch (error) {
         const endTime = performance.now();
@@ -165,6 +187,11 @@ async function translateText(text, model, apiKey) {
         
         throw error;
     }
+}
+
+// 预加载函数
+function preloadTranslation(text, model, apiKey) {
+    translateText(text, model, apiKey).catch(console.error);
 }
 
 console.log('Background script loading completed');

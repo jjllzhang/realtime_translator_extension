@@ -19,6 +19,8 @@ function initializeExtension() {
     const selectedText = window.getSelection().toString().trim();
     if (selectedText) {
       showTranslateButton(selectedText);
+      // 触发预加载
+      chrome.runtime.sendMessage({ action: "preloadTranslation", text: selectedText });
     } else {
       removeExistingButton();
       removeTranslationResult();
