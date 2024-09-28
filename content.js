@@ -1,10 +1,10 @@
-console.log('Content script 开始加载');
+console.log('Content script loading started');
 
-// 检查 chrome.runtime 是否可用
+// Check if chrome.runtime is available
 if (typeof chrome !== 'undefined' && chrome.runtime) {
   initializeExtension();
 } else {
-  console.error('chrome.runtime 不可用，扩展可能无法正常工作');
+  console.error('chrome.runtime is not available, the extension may not work properly');
 }
 
 function initializeExtension() {
@@ -57,25 +57,25 @@ function initializeExtension() {
     button.onclick = createClickHandler(text);
 
     document.body.appendChild(button);
-    console.log('翻译按钮已添加到页面');
-    console.log('按钮元素:', button);
+    console.log('Translate button added to the page');
+    console.log('Button element:', button);
 
-    // 确保按钮不会被立即移除
+    // Ensure the button is not immediately removed
     setTimeout(() => {
       if (!document.body.contains(button)) {
         document.body.appendChild(button);
-        console.log('按钮被重新添加到页面');
+        console.log('Button re-added to the page');
       }
     }, 100);
   }
 
   function createClickHandler(text) {
     return function(e) {
-      e.preventDefault(); // 阻止默认行为
-      e.stopPropagation(); // 阻止事件冒泡
-      console.log('翻译按钮被点击');
+      e.preventDefault(); // Prevent default behavior
+      e.stopPropagation(); // Stop event propagation
+      console.log('Translate button clicked');
       translateText(text);
-      // 不再在这里移除按钮，让用户可以多次点击翻译
+      // No longer remove the button here, allowing users to click multiple times
     };
   }
 
@@ -87,39 +87,39 @@ function initializeExtension() {
   }
 
   function translateText(text) {
-    console.log('发送翻译请求:', text);
+    console.log('Sending translation request:', text);
     try {
       chrome.runtime.sendMessage({ action: "translate", text }, (response) => {
-        console.log('收到翻译响应:', response);
+        console.log('Received translation response:', response);
         if (chrome.runtime.lastError) {
           console.error('Chrome runtime error:', chrome.runtime.lastError);
-          showTranslationResult(`翻译错误: ${chrome.runtime.lastError.message}`);
+          showTranslationResult(`Translation error: ${chrome.runtime.lastError.message}`);
         } else if (response && response.error) {
-          showTranslationResult(`翻译错误: ${response.error}`);
+          showTranslationResult(`Translation error: ${response.error}`);
         } else if (response && response.translatedText) {
           showTranslationResult(response.translatedText);
         } else {
-          console.error('未收到预期的响应:', response);
-          showTranslationResult('翻译失败：未收到预期的响应');
+          console.error('Unexpected response received:', response);
+          showTranslationResult('Translation failed: Unexpected response received');
         }
       });
     } catch (error) {
-      console.error('发送消息时出错:', error);
-      showTranslationResult(`发送消息错误: ${error.message}`);
+      console.error('Error sending message:', error);
+      showTranslationResult(`Message sending error: ${error.message}`);
     }
   }
 
   function showTranslationResult(translatedText) {
-    console.log('显示翻译结果:', translatedText);
-    removeTranslationResult(); // 移除现有的翻译结果框
+    console.log('Displaying translation result:', translatedText);
+    removeTranslationResult(); // Remove existing translation result box
 
     const resultBox = document.createElement('div');
     resultBox.id = 'translation-result';
     resultBox.style.position = 'fixed';
     resultBox.style.zIndex = '2147483647';
     resultBox.style.padding = '10px';
-    resultBox.style.backgroundColor = 'rgba(255, 255, 255, 0.9)'; // 半透明白色背景
-    resultBox.style.color = '#333'; // 深灰色文字
+    resultBox.style.backgroundColor = 'rgba(255, 255, 255, 0.9)'; // Semi-transparent white background
+    resultBox.style.color = '#333'; // Dark gray text
     resultBox.style.border = '1px solid rgba(0, 0, 0, 0.2)';
     resultBox.style.borderRadius = '8px';
     resultBox.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08)';
@@ -128,8 +128,8 @@ function initializeExtension() {
     resultBox.style.lineHeight = '1.5';
     resultBox.style.overflowY = 'auto';
     resultBox.style.maxHeight = '200px';
-    resultBox.style.backdropFilter = 'blur(5px)'; // 背景模糊效果
-    resultBox.style.transition = 'all 0.3s ease'; // 平滑过渡效果
+    resultBox.style.backdropFilter = 'blur(5px)'; // Background blur effect
+    resultBox.style.transition = 'all 0.3s ease'; // Smooth transition effect
 
     resultBox.textContent = translatedText;
 
@@ -147,7 +147,7 @@ function initializeExtension() {
 
     document.body.appendChild(resultBox);
 
-    // 添加悬停效果
+    // Add hover effect
     resultBox.onmouseover = function() {
       this.style.boxShadow = '0 6px 8px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.12)';
     };
@@ -164,4 +164,15 @@ function initializeExtension() {
   }
 }
 
-console.log('Content script 加载完成');
+// Add this listener to receive log messages from the background script
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === "log") {
+        if (request.isError) {
+            console.error(request.message);
+        } else {
+            console.log(request.message);
+        }
+    }
+});
+
+console.log('Content script loading completed');
