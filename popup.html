@@ -9,8 +9,19 @@
 </head>
 
 <body>
-    <h1>实时翻译</h1>
-    <p>选择文本并点击"翻译"按钮以获取翻译。</p>
+    <div class="container">
+        <h1>实时翻译插件</h1>
+        <p class="description">请输入您的DeepSeek API密钥以启用翻译功能。</p>
+        <form id="api-key-form">
+            <div class="input-wrapper">
+                <img src="key.png" alt="Key" class="input-icon">
+                <input type="password" id="api-key" placeholder="输入DeepSeek API密钥">
+            </div>
+            <button type="submit" id="save-api-key">保存密钥</button>
+        </form>
+        <p class="footer-text">您的API密钥将安全地存储在本地，仅用于翻译请求。</p>
+        <p id="status" class="status"></p>
+    </div>
     <script src="popup.js"></script>
 </body>
 
