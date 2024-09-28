@@ -11,7 +11,17 @@
     "https://api.deepseek.com/*"
   ],
   "action": {
-    "default_popup": "popup.html"
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon.png",
+      "48": "icon.png",
+      "128": "icon.png"
+    }
+  },
+  "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
   },
   "background": {
     "service_worker": "background.js"
@@ -20,6 +30,12 @@
     {
       "matches": ["<all_urls>"],
       "js": ["content.js"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["translate.svg"],
+      "matches": ["<all_urls>"]
     }
   ]
 }
