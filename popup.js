@@ -1,19 +1,26 @@
 document.addEventListener('DOMContentLoaded', function() {
     const apiKeyInput = document.getElementById('api-key');
-    const saveButton = document.getElementById('save-api-key');
+    const customPromptInput = document.getElementById('custom-prompt');
+    const saveButton = document.getElementById('save-settings');
     const statusElement = document.getElementById('status');
+    const form = document.getElementById('settings-form');
 
-    // 加载保存的API key
-    chrome.storage.sync.get('apiKey', function(data) {
+    // 加载保存的设置
+    chrome.storage.sync.get(['apiKey', 'customPrompt'], function(data) {
         if (data.apiKey) {
             apiKeyInput.value = data.apiKey;
         }
+        if (data.customPrompt) {
+            customPromptInput.value = data.customPrompt;
+        }
     });
 
-    saveButton.addEventListener('click', function() {
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
         const apiKey = apiKeyInput.value;
-        chrome.storage.sync.set({apiKey: apiKey}, function() {
-            statusElement.textContent = 'API Key已保存';
+        const customPrompt = customPromptInput.value;
+        chrome.storage.sync.set({apiKey: apiKey, customPrompt: customPrompt}, function() {
+            statusElement.textContent = '设置已保存';
             setTimeout(() => {
                 statusElement.textContent = '';
             }, 2000);

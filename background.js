@@ -34,6 +34,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 async function translateText(text, apiKey) {
     console.log('开始翻译:', text);
     try {
+        // 获取自定义prompt
+        const { customPrompt } = await chrome.storage.sync.get('customPrompt');
+        const defaultPrompt = "You are a translator. Translate the following text to Chinese.";
+        const prompt = customPrompt || defaultPrompt;
+
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: {
@@ -43,7 +48,7 @@ async function translateText(text, apiKey) {
             body: JSON.stringify({
                 model: "deepseek-chat",
                 messages: [
-                    { role: "system", content: "You are a translator. Translate the following text to Chinese." },
+                    { role: "system", content: prompt },
                     { role: "user", content: text }
                 ],
                 stream: false
